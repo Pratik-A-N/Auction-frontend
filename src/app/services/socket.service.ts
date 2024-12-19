@@ -1,14 +1,16 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { io } from "socket.io-client";
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SocketService {
   private socket: any;
+  private readonly apiUrl: string = environment.apiUrl;
   constructor() {
-    this.socket = io('http://localhost:3000')
+    this.socket = io(this.apiUrl)
   }
 
   public onMessage() {
