@@ -162,6 +162,24 @@
     </form>
    </div>
    {{errorMessage}}
+
+   <div class="mt-5">
+     Simulator
+      <div>
+        <form [formGroup]="simulationForm" (ngSubmit)="onStartSimulation(activeProducts[0].productId)" action="">
+          <label for="users">Users to Add</label>
+          <input type="number" formControlName="noOfUsers">
+          <button type="submit" >Start</button>
+        </form>
+      </div>
+   </div>
+
+   <div>
+    Log stream
+    <div *ngFor="let log of logger">
+      {{log}}
+    </div>
+   </div>
 </main>
 
 

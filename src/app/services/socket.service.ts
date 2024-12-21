@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -9,6 +9,7 @@ import { environment } from '../../environments/environment';
 export class SocketService {
   private socket: any;
   private readonly apiUrl: string = environment.apiUrl;
+  private sockets: Socket[] = [];
   constructor() {
     this.socket = io(this.apiUrl)
   }
@@ -37,6 +38,14 @@ export class SocketService {
     });
   }
 
+  onLogger(): Observable<{message: string}>{
+    return new Observable((observer)=>{
+      this.socket.on('logger'), (data: {message: string}) =>{
+        observer.next(data);
+      }
+    })
+  }
+
   onNewHighestBid(): Observable<{productId: string; currentBid: number; username: string }> {
     return new Observable((observer)=>{
       this.socket.on('updateBid',(data: { productId: string; currentBid: number; username: string; } | undefined)=>{
@@ -49,4 +58,18 @@ export class SocketService {
     this.socket.emit(event, data);
   }
 
+  emitSimulatedEvent(sokt: Socket, event: string, data: any){
+    sokt.emit(event,data);
+  }
+
+  createUsers(userNumber: number){
+    console.log(userNumber);
+    for(let i=0; i<userNumber; i++){
+      const sokt = io(this.apiUrl); 
+      this.sockets.push(sokt);
+    }
+    return this.sockets;
+  }
+
+  
 }
