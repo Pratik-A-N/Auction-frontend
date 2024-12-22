@@ -38,11 +38,17 @@ export class SocketService {
     });
   }
 
-  onLogger(): Observable<{message: string}>{
-    return new Observable((observer)=>{
-      this.socket.on('logger'), (data: {message: string}) =>{
+  onLogs(): Observable<{
+    status: string;
+    username: string;
+    bid: number;
+    currentBid: number;
+    timeStamp: Date
+  }> {
+    return new Observable((observer) =>{
+      this.socket.on('logs',(data: {status: string; username: string; bid: number; currentBid: number; timeStamp: Date} | undefined)=>{
         observer.next(data);
-      }
+      })
     })
   }
 
@@ -71,5 +77,7 @@ export class SocketService {
     return this.sockets;
   }
 
-  
+  clearUsers(){
+    this.sockets = [];
+  }
 }

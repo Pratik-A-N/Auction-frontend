@@ -1,20 +1,26 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SocketService } from './services/socket.service';
 import { CommonModule } from '@angular/common';
 import { FormGroup, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ProductService } from './services/product.service';
 import { Product } from './models/product.model';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Socket } from 'socket.io-client';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ReactiveFormsModule, CommonModule],
+  imports: [RouterOutlet, ReactiveFormsModule, CommonModule, MatCardModule, MatButtonModule, MatInputModule, MatFormFieldModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
 export class AppComponent {
   private message!: string;
+  private simulationIntervalId: any = null;
   currentBid!: number;
   socketId!: any;
   activeProducts!: Product[];
@@ -24,9 +30,11 @@ export class AppComponent {
     username: new FormControl(''),
     bid: new FormControl(0)
   })
+  showStartBtn: boolean = true;
   simulationForm = new FormGroup({
     noOfUsers: new FormControl(0)
   })
+  private _snackBar = inject(MatSnackBar);
   errorMessage!: string;
   logger: string[] = [];
 
@@ -54,6 +62,9 @@ export class AppComponent {
     this.socketservice.onBidError().subscribe({
       next: data =>{
         this.errorMessage = data;
+        this._snackBar.open(this.errorMessage, 'Close' ,{
+          duration: 5000
+        });
       }
     })
 
@@ -64,10 +75,10 @@ export class AppComponent {
       }
     })
 
-    this.socketservice.onLogger().subscribe({
+    this.socketservice.onLogs().subscribe({
       next: data =>{
-        console.log(data);
-        this.logger.push(data.message);
+        const logMessage = `Status: ${data.status} | Username: ${data.username} | Bid Value: ${data.bid} | Time Stamp: ${data.timeStamp}`;
+        this.logger.unshift(logMessage);
       }
     })
 
@@ -94,6 +105,13 @@ export class AppComponent {
   }
 
   onStartSimulation(productId: number){
+    if(Number(this.simulationForm.value.noOfUsers)<=0 || Number(this.simulationForm.value.noOfUsers) > 50){
+      this._snackBar.open("User number should be between 1 and 50", 'Close' ,{
+        duration: 5000
+      });
+      return;
+    }
+    this.showStartBtn = false;
     const clients = this.socketservice.createUsers(Number(this.simulationForm.value.noOfUsers));
     this.simulate(productId,clients);
   }
@@ -111,20 +129,29 @@ export class AppComponent {
   }
 
   simulate(productId: number, clients: Socket[]){
-    setInterval(() => {
+    this.simulationIntervalId = setInterval(() => {
       const numberOfClients = clients.length;
       const subsetSize = Math.floor(Math.random() * numberOfClients) + 1;
       const selectedClients = this.getRandomSubset(clients,subsetSize);
-      console.log("=========================================");
+      // console.log("=========================================");
       selectedClients.forEach((socket, index) => {
         const randomBid = this.generateRandomBid();
-        console.log(`User-${socket.id} | ${randomBid} | ${new Date()}`)
+        // console.log(`User-${socket.id} | ${randomBid} | ${new Date()}`)
         this.socketservice.emitSimulatedEvent(socket,'bid',{
           bid: randomBid,
           username: `User-${socket.id}`,
           productId: productId});
       });
-      console.log("=========================================");
-    }, 2000);
+      // console.log("=========================================");
+    }, 500);
+  }
+
+  stopSimulation(){
+    this.showStartBtn = true;
+    if (this.simulationIntervalId !== null) {
+      clearInterval(this.simulationIntervalId); 
+      this.simulationIntervalId = null; 
+      this.socketservice.clearUsers();
+    }
   }
 }
