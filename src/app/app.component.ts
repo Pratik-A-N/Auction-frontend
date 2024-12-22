@@ -101,6 +101,12 @@ export class AppComponent {
   }
 
   onSubmit(productid: Number){
+    if(this.userBidForm.value.username === ''){
+      this._snackBar.open("Username cannot be empty", 'Close',{
+        duration: 5000
+      })
+      return;
+    }
     this.socketservice.emitEvent('bid',{bid: this.userBidForm.value.bid, username: this.userBidForm.value.username, productId: productid});
   }
 
